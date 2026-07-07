@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Glow Up Worm — Lolly &amp; Pops Hub</title>
+<style>
+  :root{
+    --bg:#0a0a14;
+    --panel:#12122a;
+    --panel2:#1a1a3a;
+    --text:#eaeaff;
+    --dim:#8888bb;
+    --p1:#00e5cc; --p2:#ff4fa0; --p3:#ffd23f; --p4:#a06bff;
+    --good:#41e841;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    background:var(--bg);
+    background-image:radial-gradient(circle at 20% 10%, rgba(160,107,255,.10), transparent 45%),
+                     radial-gradient(circle at 85% 85%, rgba(0,229,204,.08), transparent 45%);
+    color:var(--text);
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow:hidden;
+  }
+  /* ── Hub branding ── */
+  .hub-banner{
+    text-align:center; padding:8px 0 2px;
+    font-size:clamp(9px,2.5vw,13px); letter-spacing:.3em;
+    color:var(--dim); text-transform:uppercase;
+  }
+  h1{
+    font-size:clamp(1.5rem, 6vw, 2.8rem);
+    text-align:center; letter-spacing:.12em;
+    background:linear-gradient(90deg, var(--p1), var(--p2), var(--p3), var(--p4));
+    -webkit-background-clip:text; background-clip:text;
+    -webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 14px rgba(255,79,160,.45));
+    margin-bottom:2px;
+  }
+  .screen{
+    position:fixed; inset:0;
+    display:none; flex-direction:column; align-items:center;
+    padding:max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom));
+  }
+  .screen.active{display:flex;}
+  #setupScreen{overflow-y:auto; justify-content:flex-start; gap:12px; -webkit-overflow-scrolling:touch;}
+  .tagline{color:var(--dim); font-size:.88rem; text-align:center;}
+
+  /* ── Player slots ── */
+  .slots{display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:10px; width:min(680px,100%);}
+  .slot{
+    background:var(--panel); border:2px solid #26264d; border-radius:14px;
+    padding:11px; display:flex; flex-direction:column; gap:7px; align-items:center;
+    transition:border-color .2s, opacity .2s;
+  }
+  .slot.on{border-color:var(--c); box-shadow:0 0 14px color-mix(in srgb, var(--c) 40%, transparent);}
+  .slot.off{opacity:.45;}
+  .slot .dot{width:20px; height:20px; border-radius:50%; background:var(--c); box-shadow:0 0 10px var(--c);}
+  .slot .name{font-weight:700; letter-spacing:.05em; font-size:.95rem;}
+  .slot .keys{font-size:.7rem; color:var(--dim); text-align:center; min-height:1.4em;}
+  .toggleRow{display:flex; gap:6px; width:100%;}
+  .tbtn{
+    flex:1; padding:8px 4px; border-radius:9px; border:1.5px solid #34346a;
+    background:var(--panel2); color:var(--dim); font-weight:700; font-size:.76rem;
+    cursor:pointer; touch-action:manipulation;
+  }
+  .tbtn.sel{background:var(--c); color:#0a0a14; border-color:var(--c);}
+  .joinBtn{
+    width:100%; padding:8px; border-radius:9px; border:1.5px solid #34346a;
+    background:transparent; color:var(--dim); font-weight:700; cursor:pointer;
+    font-size:.78rem; touch-action:manipulation;
+  }
+  .slot.on .joinBtn{border-color:var(--c); color:var(--c);}
+
+  /* ── Difficulty ── */
+  .diffRow{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .diff{
+    padding:9px 14px; border-radius:11px; border:1.5px solid #34346a;
+    background:var(--panel); color:var(--dim); font-weight:700; cursor:pointer;
+    font-size:.88rem; touch-action:manipulation;
+  }
+  .diff.sel{border-color:var(--p3); color:var(--p3); box-shadow:0 0 12px rgba(255,210,63,.35);}
+  .sectionLabel{color:var(--dim); font-size:.78rem; letter-spacing:.15em; text-transform:uppercase;}
+
+  .bigBtn{
+    padding:14px 40px; font-size:1.1rem; font-weight:800; letter-spacing:.1em;
+    border:none; border-radius:14px; cursor:pointer; touch-action:manipulation;
+    background:linear-gradient(90deg, var(--p1), var(--p4));
+    color:#0a0a14; box-shadow:0 0 22px rgba(0,229,204,.45);
+  }
+  .bigBtn:active{transform:scale(.97);}
+  .legend{
+    width:min(680px,100%); background:var(--panel); border-radius:12px; padding:9px 12px;
+    font-size:.78rem; color:var(--dim); display:flex; flex-wrap:wrap; gap:5px 16px; justify-content:center;
+  }
+
+  /* ── Game screen ── */
+  #gameScreen{gap:6px;}
+  #hud{
+    width:min(920px,100%); display:flex; align-items:center;
+    gap:8px; flex-wrap:wrap; justify-content:center; flex-shrink:0;
+  }
+  .hudScore{
+    display:flex; align-items:center; gap:5px; background:var(--panel);
+    border:1.5px solid var(--c); border-radius:20px; padding:3px 11px;
+    font-size:.82rem; font-weight:700;
+  }
+  .hudScore.dead{opacity:.3; text-decoration:line-through;}
+  .hudScore .mini{width:10px; height:10px; border-radius:50%; background:var(--c); box-shadow:0 0 5px var(--c);}
+  #speedWrap{display:flex; align-items:center; gap:5px; font-size:.72rem; color:var(--dim);}
+  #speedBar{width:80px; height:7px; background:var(--panel2); border-radius:5px; overflow:hidden;}
+  #speedFill{height:100%; width:0%; background:linear-gradient(90deg,var(--p1),var(--p2)); transition:width .5s;}
+  #pauseBtn{
+    background:var(--panel); border:1.5px solid #34346a; color:var(--text);
+    border-radius:10px; padding:5px 13px; font-weight:700; cursor:pointer;
+    touch-action:manipulation;
+  }
+  #canvasWrap{
+    flex:1; width:min(920px,100%); min-height:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  canvas{
+    border-radius:12px; border:2px solid #26264d;
+    box-shadow:0 0 30px rgba(0,229,204,.12);
+    touch-action:none;
+  }
+
+  /* ── D-pad: hidden by default, shown only when touch is detected ── */
+  #dpad{
+    display:none;
+    grid-template-columns:repeat(3, 72px);
+    grid-template-rows:repeat(2, 72px);
+    gap:8px;
+    padding-bottom:4px;
+    flex-shrink:0;
+  }
+  body.touch #dpad{display:grid;}
+  .dbtn{
+    width:72px; height:72px; border-radius:16px;
+    background:var(--panel2); border:2px solid #34346a; color:var(--text);
+    font-size:1.8rem; font-weight:800; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:none; user-select:none; -webkit-user-select:none;
+  }
+  .dbtn:active{background:var(--p1); color:#0a0a14; border-color:var(--p1);}
+  #dUp{grid-column:2; grid-row:1;}
+  #dLeft{grid-column:1; grid-row:2;}
+  #dDown{grid-column:2; grid-row:2;}
+  #dRight{grid-column:3; grid-row:2;}
+
+  /* ── Overlays ── */
+  .overlay{
+    position:fixed; inset:0; display:none; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:16px; background:rgba(8,8,20,.88); z-index:20; padding:20px; text-align:center;
+  }
+  .overlay.active{display:flex;}
+  #countNum{font-size:5.5rem; font-weight:900; color:var(--p3); text-shadow:0 0 30px var(--p3);}
+  .resultRow{
+    display:flex; align-items:center; gap:12px; background:var(--panel);
+    border:2px solid var(--c); border-radius:14px; padding:11px 20px;
+    font-size:1rem; font-weight:700; min-width:min(300px,86vw); justify-content:space-between;
+  }
+  .medal{font-size:1.4rem;}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div class="screen active" id="setupScreen">
+  <div class="hub-banner">🍭 Lolly &amp; Pops Hub</div>
+  <h1>GLOW UP WORM</h1>
+  <p class="tagline">Eat. Grow. Glow. Last worm wiggling wins!</p>
+
+  <div class="sectionLabel">Players</div>
+  <div class="slots" id="slots"></div>
+
+  <div class="sectionLabel">Speed Ramp</div>
+  <div class="diffRow" id="diffRow">
+    <button class="diff" data-d="easy">🐢 Easy</button>
+    <button class="diff sel" data-d="normal">🙂 Normal</button>
+    <button class="diff" data-d="hard">🔥 Hard</button>
+    <button class="diff" data-d="insane">⚡ Insane</button>
+  </div>
+
+  <button class="bigBtn" id="startBtn">GLOW UP! 🐛</button>
+
+  <div class="legend">
+    <span>⚡ Speed boost</span><span>🛡 Shield (blocks one crash)</span>
+    <span>✨ 2× points</span><span>✂️ Shrink yourself</span><span>⭐ Star food = 5 pts</span>
+  </div>
+  <div class="legend" id="controlsLegend">
+    <span>P1: WASD</span><span>P2: Arrows</span><span>P3: IJKL</span><span>P4: Numpad 8·4·2·6</span>
+    <span>P = pause</span>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen" id="gameScreen">
+  <div id="hud">
+    <div id="scoreArea" style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;"></div>
+    <div id="speedWrap"><span>SPEED</span><div id="speedBar"><div id="speedFill"></div></div></div>
+    <button id="pauseBtn">⏸</button>
+  </div>
+  <div id="canvasWrap"><canvas id="cv"></canvas></div>
+  <div id="dpad">
+    <button class="dbtn" id="dUp">▲</button>
+    <button class="dbtn" id="dLeft">◀</button>
+    <button class="dbtn" id="dDown">▼</button>
+    <button class="dbtn" id="dRight">▶</button>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div class="overlay" id="countOverlay"><div id="countNum">3</div></div>
+<div class="overlay" id="pauseOverlay">
+  <h1 style="font-size:2rem;">PAUSED</h1>
+  <button class="bigBtn" id="resumeBtn">RESUME</button>
+  <button class="diff" id="quitBtn">Quit to menu</button>
+</div>
+<div class="overlay" id="resultOverlay">
+  <h1 style="font-size:2rem;">RESULTS</h1>
+  <div id="resultList" style="display:flex;flex-direction:column;gap:10px;"></div>
+  <button class="bigBtn" id="rematchBtn">REMATCH 🔄</button>
+  <button class="diff" id="menuBtn">🏠 Back to menu</button>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ── Touch detection ── */
+const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0
+              || window.matchMedia('(pointer: coarse)').matches;
+if (IS_TOUCH) document.body.classList.add('touch');
+
+/* ── Config ── */
+const COLS = 30, ROWS = 22;
+const COLORS = ['#00e5cc','#ff4fa0','#ffd23f','#a06bff'];
+const NAMES  = ['Teal','Pink','Gold','Violet'];
+const KEYMAPS = [
+  {w:'up', a:'left', s:'down', d:'right'},
+  {arrowup:'up', arrowleft:'left', arrowdown:'down', arrowright:'right'},
+  {i:'up', j:'left', k:'down', l:'right'},
+  {numpad8:'up', numpad4:'left', numpad2:'down', numpad6:'right'}
+];
+const DIRS = {up:{x:0,y:-1}, down:{x:0,y:1}, left:{x:-1,y:0}, right:{x:1,y:0}};
+const OPP  = {up:'down', down:'up', left:'right', right:'left'};
+const DIFF = {
+  easy:   {start:230, min:150, rampMs:120000},
+  normal: {start:190, min:110, rampMs:100000},
+  hard:   {start:160, min:85,  rampMs:80000},
+  insane: {start:130, min:62,  rampMs:60000}
+};
+const POWERUPS = [
+  {type:'speed',  icon:'⚡', dur:5000},
+  {type:'shield', icon:'🛡', dur:0},
+  {type:'double', icon:'✨', dur:6000},
+  {type:'shrink', icon:'✂️', dur:0}
+];
+
+/* ── Setup screen state ── */
+const slotState = [
+  {active:true,  bot:false},
+  {active:true,  bot:IS_TOUCH},   // mobile: P2 defaults to bot
+  {active:false, bot:true},
+  {active:false, bot:true}
+];
+let difficulty = 'normal';
+
+const slotsEl = document.getElementById('slots');
+function renderSlots(){
+  slotsEl.innerHTML = '';
+  slotState.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'slot ' + (s.active ? 'on' : 'off');
+    div.style.setProperty('--c', COLORS[i]);
+    const keyHint = IS_TOUCH
+      ? (i === 0 ? 'Swipe / D-pad' : (s.bot ? 'CPU' : 'Keyboard'))
+      : ['W A S D','↑ ← ↓ →','I J K L','Num 8·4·2·6'][i];
+    div.innerHTML = `
+      <div class="dot"></div>
+      <div class="name">${NAMES[i]}</div>
+      <div class="keys">${s.active ? (s.bot ? '🤖 CPU' : keyHint) : ''}</div>
+      <div class="toggleRow" style="--c:${COLORS[i]};${s.active?'':'visibility:hidden'}">
+        <button class="tbtn ${!s.bot?'sel':''}" data-i="${i}" data-mode="human">Human</button>
+        <button class="tbtn ${s.bot?'sel':''}"  data-i="${i}" data-mode="bot">Bot</button>
+      </div>
+      <button class="joinBtn" data-i="${i}">${s.active ? (i < 2 ? 'Playing ✓' : 'Remove') : '+ Add player'}</button>
+    `;
+    slotsEl.appendChild(div);
+  });
+}
+slotsEl.addEventListener('click', e => {
+  const t = e.target;
+  if (t.classList.contains('tbtn')) {
+    slotState[+t.dataset.i].bot = t.dataset.mode === 'bot';
+    renderSlots();
+  } else if (t.classList.contains('joinBtn')) {
+    const i = +t.dataset.i;
+    if (i >= 2) { slotState[i].active = !slotState[i].active; renderSlots(); }
+  }
+});
+document.getElementById('diffRow').addEventListener('click', e => {
+  if (!e.target.dataset.d) return;
+  difficulty = e.target.dataset.d;
+  document.querySelectorAll('.diff[data-d]').forEach(b => b.classList.toggle('sel', b.dataset.d === difficulty));
+});
+renderSlots();
+
+/* ── Canvas ── */
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let CELL  = 24;
+
+function sizeCanvas(){
+  const wrap = document.getElementById('canvasWrap');
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  if (w < 40 || h < 40) return;
+  CELL = Math.max(10, Math.floor(Math.min(w / COLS, h / ROWS)));
+  const cssW = CELL * COLS, cssH = CELL * ROWS;
+  const dpr = window.devicePixelRatio || 1;
+  cv.style.width  = cssW + 'px';
+  cv.style.height = cssH + 'px';
+  cv.width  = cssW * dpr;
+  cv.height = cssH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', () => {
+  if (document.getElementById('gameScreen').classList.contains('active')) sizeCanvas();
+});
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    if (document.getElementById('gameScreen').classList.contains('active')) sizeCanvas();
+  }, 250);
+});
+
+/* ── Game state ── */
+let worms = [], foods = [], powerups = [];
+let running = false, paused = false, gameOver = false;
+let elapsed = 0, lastPowerupAt = 0, deathOrder = [];
+let rafId = null, lastFrame = 0, acc = 0;
+
+function tickInterval(){
+  const d = DIFF[difficulty];
+  const t = Math.min(1, elapsed / d.rampMs);
+  return d.start - (d.start - d.min) * t;
+}
+
+function freeCells(){
+  const occ = new Set();
+  worms.forEach(w => w.alive && w.segments.forEach(s => occ.add(s.x + ',' + s.y)));
+  foods.forEach(f => occ.add(f.x + ',' + f.y));
+  powerups.forEach(p => occ.add(p.x + ',' + p.y));
+  const out = [];
+  for (let x = 0; x < COLS; x++)
+    for (let y = 0; y < ROWS; y++)
+      if (!occ.has(x + ',' + y)) out.push({x, y});
+  return out;
+}
+function spawnFood(){
+  const cells = freeCells();
+  if (!cells.length) return;
+  const c = cells[Math.floor(Math.random() * cells.length)];
+  const star = Math.random() < 0.15;
+  foods.push({x:c.x, y:c.y, star, pts:star?5:1, grow:star?3:1});
+}
+function spawnPowerup(){
+  if (powerups.length >= 2) return;
+  const cells = freeCells();
+  if (!cells.length) return;
+  const c = cells[Math.floor(Math.random() * cells.length)];
+  const def = POWERUPS[Math.floor(Math.random() * POWERUPS.length)];
+  powerups.push({x:c.x, y:c.y, ...def, expiresAt: elapsed + 12000});
+}
+
+function makeWorms(){
+  const starts = [
+    {x:4,       y:4,       dir:'right'},
+    {x:COLS-5,  y:ROWS-5,  dir:'left'},
+    {x:COLS-5,  y:4,       dir:'down'},
+    {x:4,       y:ROWS-5,  dir:'up'}
+  ];
+  worms = [];
+  slotState.forEach((s, i) => {
+    if (!s.active) return;
+    const st = starts[i], d = DIRS[st.dir], segs = [];
+    for (let k = 0; k < 4; k++) segs.push({x: st.x - d.x*k, y: st.y - d.y*k});
+    worms.push({
+      id:i, name:NAMES[i], color:COLORS[i],
+      segments:segs, dir:st.dir, queue:[],
+      alive:true, score:0, isBot:s.bot, shield:false,
+      speedUntil:0, doubleUntil:0, pendingGrowth:0, moveAcc:0
+    });
+  });
+}
+
+/* ── Input ── */
+function pushDir(worm, dir){
+  if (!worm || !worm.alive || worm.isBot) return;
+  const last = worm.queue.length ? worm.queue[worm.queue.length-1] : worm.dir;
+  if (dir === last || dir === OPP[last]) return;
+  if (worm.queue.length < 2) worm.queue.push(dir);
+}
+document.addEventListener('keydown', e => {
+  if (!running) return;
+  const code = e.code.toLowerCase();
+  let key = e.key.toLowerCase();
+  if (code.startsWith('numpad')) key = code;
+  if (key === 'p') { togglePause(); return; }
+  if (['arrowup','arrowdown','arrowleft','arrowright'].includes(key)) e.preventDefault();
+  worms.forEach(w => {
+    const map = KEYMAPS[w.id];
+    if (map[key]) pushDir(w, map[key]);
+  });
+});
+
+/* Touch — swipe on canvas */
+function firstHuman(){ return worms.find(w => !w.isBot && w.alive) || worms.find(w => !w.isBot); }
+
+let touchStart = null;
+const SWIPE_MIN = 24;
+cv.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  touchStart = {x: t.clientX, y: t.clientY};
+}, {passive:false});
+cv.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!touchStart) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStart.x, dy = t.clientY - touchStart.y;
+  if (Math.abs(dx) < SWIPE_MIN && Math.abs(dy) < SWIPE_MIN) return;
+  const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
+  pushDir(firstHuman(), dir);
+  touchStart = {x: t.clientX, y: t.clientY}; // allow chained swipes
+}, {passive:false});
+cv.addEventListener('touchend', () => { touchStart = null; });
+
+/* D-pad buttons */
+[['dUp','up'],['dDown','down'],['dLeft','left'],['dRight','right']].forEach(([id, dir]) => {
+  const btn = document.getElementById(id);
+  const fire = e => { e.preventDefault(); pushDir(firstHuman(), dir); };
+  btn.addEventListener('touchstart', fire, {passive:false});
+  btn.addEventListener('mousedown',  fire);
+});
+
+/* ── Bot AI ── */
+function botThink(w){
+  const head = w.segments[0];
+  const targets = [
+    ...foods.map(f => ({x:f.x, y:f.y, v:f.pts})),
+    ...powerups.filter(p => p.type !== 'shrink').map(p => ({x:p.x, y:p.y, v:3}))
+  ];
+  let best = null, bestScore = -Infinity;
+  targets.forEach(t => {
+    const s = t.v*10 - (Math.abs(t.x-head.x) + Math.abs(t.y-head.y));
+    if (s > bestScore) { bestScore = s; best = t; }
+  });
+  const occ = new Set();
+  worms.forEach(o => o.alive && o.segments.forEach(seg => occ.add(seg.x+','+seg.y)));
+  const options = ['up','down','left','right'].filter(d => d !== OPP[w.dir]);
+  const scored = options.map(d => {
+    const v = DIRS[d];
+    const nx = head.x+v.x, ny = head.y+v.y;
+    let s = 0;
+    if (nx<0||ny<0||nx>=COLS||ny>=ROWS||occ.has(nx+','+ny)) s -= 1000;
+    else {
+      worms.forEach(o => {
+        if (o===w||!o.alive) return;
+        const oh = o.segments[0];
+        if (Math.abs(oh.x-nx)+Math.abs(oh.y-ny) <= 1) s -= 40;
+      });
+      if (best) s += -(Math.abs(best.x-nx)+Math.abs(best.y-ny));
+      s += Math.random()*3;
+    }
+    return {d, s};
+  }).sort((a,b) => b.s-a.s);
+  if (scored.length) w.dir = scored[0].d;
+}
+
+/* ── Simulation step ── */
+function step(dt){
+  elapsed += dt;
+  while (foods.length < 4) spawnFood();
+  if (elapsed - lastPowerupAt > 10000) { spawnPowerup(); lastPowerupAt = elapsed; }
+  powerups = powerups.filter(p => p.expiresAt > elapsed);
+
+  const alive = worms.filter(w => w.alive);
+  alive.forEach(w => {
+    if (w.isBot) botThink(w);
+    else if (w.queue.length) w.dir = w.queue.shift();
+    w.moveAcc += (w.speedUntil > elapsed) ? 1.5 : 1;
+  });
+
+  let moving = true;
+  while (moving){
+    moving = false;
+    const movers = alive.filter(w => w.alive && w.moveAcc >= 1);
+    if (!movers.length) break;
+    const newHeads = new Map();
+    movers.forEach(w => {
+      const v = DIRS[w.dir], h = w.segments[0];
+      newHeads.set(w, {x:h.x+v.x, y:h.y+v.y});
+    });
+    const occ = new Map();
+    worms.forEach(o => {
+      if (!o.alive) return;
+      const cut = (newHeads.has(o) && o.pendingGrowth===0) ? o.segments.length-1 : o.segments.length;
+      for (let k=0; k<cut; k++) occ.set(o.segments[k].x+','+o.segments[k].y, o);
+    });
+    movers.forEach(w => {
+      if (!w.alive) return;
+      const nh = newHeads.get(w);
+      let fatal = false;
+      if (nh.x<0||nh.y<0||nh.x>=COLS||nh.y>=ROWS) fatal = true;
+      else if (occ.has(nh.x+','+nh.y)) fatal = true;
+      else {
+        for (const [o, oh] of newHeads){
+          if (o!==w && o.alive && oh.x===nh.x && oh.y===nh.y){ fatal=true; break; }
+        }
+      }
+      if (fatal){
+        if (w.shield){ w.shield=false; w.moveAcc=0; return; }
+        kill(w); return;
+      }
+      w.segments.unshift(nh);
+      if (w.pendingGrowth>0) w.pendingGrowth--;
+      else w.segments.pop();
+      w.moveAcc -= 1;
+      if (w.moveAcc >= 1) moving = true;
+
+      const fi = foods.findIndex(f => f.x===nh.x && f.y===nh.y);
+      if (fi>=0){
+        const f = foods.splice(fi,1)[0];
+        const mult = (w.doubleUntil>elapsed) ? 2 : 1;
+        w.score += f.pts * mult;
+        w.pendingGrowth += f.grow;
+      }
+      const pi = powerups.findIndex(p => p.x===nh.x && p.y===nh.y);
+      if (pi>=0){
+        const p = powerups.splice(pi,1)[0];
+        if (p.type==='speed')  w.speedUntil  = elapsed + p.dur;
+        if (p.type==='double') w.doubleUntil = elapsed + p.dur;
+        if (p.type==='shield') w.shield = true;
+        if (p.type==='shrink'){
+          const keep = Math.max(3, Math.ceil(w.segments.length/2));
+          w.segments = w.segments.slice(0, keep);
+        }
+      }
+    });
+  }
+  const survivors = worms.filter(w => w.alive);
+  if ((worms.length>1 && survivors.length<=1) || survivors.length===0) endGame();
+  updateHUD();
+}
+function kill(w){ w.alive=false; deathOrder.push(w.id); }
+
+/* ── Render ── */
+function draw(){
+  const W=CELL*COLS, H=CELL*ROWS;
+  ctx.fillStyle='#0c0c1c';
+  ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,0.03)';
+  ctx.lineWidth=1;
+  for(let x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*CELL,0);ctx.lineTo(x*CELL,H);ctx.stroke();}
+  for(let y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CELL);ctx.lineTo(W,y*CELL);ctx.stroke();}
+
+  const pulse = 0.75 + 0.25*Math.sin(performance.now()/250);
+
+  foods.forEach(f => {
+    const cx=f.x*CELL+CELL/2, cy=f.y*CELL+CELL/2;
+    ctx.shadowColor = f.star ? '#ffd23f' : '#41e841';
+    ctx.shadowBlur  = 12*pulse;
+    ctx.fillStyle   = f.star ? '#ffd23f' : '#41e841';
+    ctx.beginPath();
+    ctx.arc(cx, cy, CELL*(f.star?0.34:0.26)*pulse, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur=0;
+    if(f.star){
+      ctx.font=`${Math.floor(CELL*.6)}px sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('⭐',cx,cy);
+    }
+  });
+
+  powerups.forEach(p => {
+    const cx=p.x*CELL+CELL/2, cy=p.y*CELL+CELL/2;
+    ctx.shadowColor='#a06bff'; ctx.shadowBlur=14*pulse;
+    ctx.fillStyle='rgba(160,107,255,0.25)';
+    ctx.beginPath(); ctx.arc(cx,cy,CELL*.42*pulse,0,Math.PI*2); ctx.fill();
+    ctx.shadowBlur=0;
+    ctx.font=`${Math.floor(CELL*.66)}px sans-serif`;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p.icon,cx,cy);
+  });
+
+  worms.forEach(w => {
+    if(!w.alive) return;
+    const n=w.segments.length;
+    w.segments.forEach((s,i) => {
+      const t=1-i/n;
+      ctx.shadowColor=w.color; ctx.shadowBlur=i===0?16:8*t;
+      ctx.fillStyle=w.color; ctx.globalAlpha=0.45+0.55*t;
+      const pad=i===0?1:2;
+      roundRect(s.x*CELL+pad, s.y*CELL+pad, CELL-pad*2, CELL-pad*2, 5);
+    });
+    ctx.globalAlpha=1; ctx.shadowBlur=0;
+    const h=w.segments[0];
+    ctx.fillStyle='#0a0a14';
+    const ex=h.x*CELL+CELL/2, ey=h.y*CELL+CELL/2, r=CELL*.09;
+    const v=DIRS[w.dir];
+    ctx.beginPath(); ctx.arc(ex+v.x*CELL*.15-v.y*CELL*.16, ey+v.y*CELL*.15-v.x*CELL*.16, r, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ex+v.x*CELL*.15+v.y*CELL*.16, ey+v.y*CELL*.15+v.x*CELL*.16, r, 0, Math.PI*2); ctx.fill();
+    ctx.font=`bold ${Math.max(10,Math.floor(CELL*.5))}px sans-serif`;
+    ctx.textAlign='center'; ctx.fillStyle=w.color;
+    let badge='';
+    if(w.shield) badge+='🛡';
+    if(w.speedUntil>elapsed) badge+='⚡';
+    if(w.doubleUntil>elapsed) badge+='✨';
+    ctx.fillText(`${w.score}${badge}`, h.x*CELL+CELL/2, Math.max(12,h.y*CELL-5));
+  });
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.fill();
+}
+
+/* ── Single unified rAF loop ── */
+function loop(ts){
+  if(!running) return;
+  rafId=requestAnimationFrame(loop);
+  if(lastFrame===0) lastFrame=ts;
+  const dt=Math.min(100, ts-lastFrame);
+  lastFrame=ts;
+  if(!paused && !gameOver){
+    acc+=dt;
+    const iv=tickInterval();
+    while(acc>=iv){ acc-=iv; step(iv); if(gameOver) break; }
+  }
+  draw();
+}
+
+/* ── HUD ── */
+function updateHUD(){
+  document.getElementById('scoreArea').innerHTML = worms.map(w=>`
+    <div class="hudScore ${w.alive?'':'dead'}" style="--c:${w.color}">
+      <div class="mini"></div>${w.isBot?'🤖 ':''}${w.name}: ${w.score}
+    </div>`).join('');
+  const d=DIFF[difficulty];
+  document.getElementById('speedFill').style.width =
+    Math.round(100*Math.min(1,elapsed/d.rampMs))+'%';
+}
+
+/* ── Screen management ── */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function overlay(id,on){ document.getElementById(id).classList.toggle('active',on); }
+
+/* ── Game flow ── */
+function startGame(){
+  if(slotState.filter(s=>s.active).length<2) slotState[1].active=true;
+  makeWorms();
+  foods=[]; powerups=[]; deathOrder=[];
+  elapsed=0; lastPowerupAt=0; acc=0; lastFrame=0;
+  paused=false; gameOver=false;
+  show('gameScreen');
+  // Size AFTER screen is painted
+  requestAnimationFrame(()=>{
+    sizeCanvas();
+    for(let i=0;i<4;i++) spawnFood();
+    updateHUD();
+    countdown(3);
+  });
+}
+function countdown(n){
+  overlay('countOverlay',true);
+  document.getElementById('countNum').textContent = n>0 ? n : 'GO!';
+  if(n>=0) setTimeout(()=>countdown(n-1), n>0?800:500);
+  else{
+    overlay('countOverlay',false);
+    running=true; lastFrame=0; acc=0;
+    if(rafId) cancelAnimationFrame(rafId);
+    rafId=requestAnimationFrame(loop);
+  }
+}
+function togglePause(){
+  if(!running||gameOver) return;
+  paused=!paused;
+  overlay('pauseOverlay',paused);
+  if(!paused){ lastFrame=0; acc=0; } // clean re-entry, no tick debt
+}
+function endGame(){
+  gameOver=true;
+  worms.filter(w=>w.alive).forEach(kill);
+  setTimeout(showResults,700);
+}
+function showResults(){
+  running=false;
+  if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+  const ranked=[...deathOrder].reverse().map(id=>worms.find(w=>w.id===id));
+  const medals=['🥇','🥈','🥉','4th'];
+  document.getElementById('resultList').innerHTML=ranked.map((w,i)=>`
+    <div class="resultRow" style="--c:${w.color}">
+      <span class="medal">${medals[i]||''}</span>
+      <span>${w.isBot?'🤖 ':''}${w.name}</span>
+      <span>${w.score} pts</span>
+    </div>`).join('');
+  overlay('resultOverlay',true);
+}
+
+const toMenu=()=>{
+  running=false; paused=false; gameOver=false;
+  if(rafId){ cancelAnimationFrame(rafId); rafId=null; }
+  overlay('pauseOverlay',false); overlay('resultOverlay',false);
+  show('setupScreen');
+};
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('pauseBtn').addEventListener('click', togglePause);
+document.getElementById('resumeBtn').addEventListener('click', togglePause);
+document.getElementById('rematchBtn').addEventListener('click', ()=>{ overlay('resultOverlay',false); startGame(); });
+document.getElementById('quitBtn').addEventListener('click', toMenu);
+document.getElementById('menuBtn').addEventListener('click', toMenu);
+
+})();
+</script>
+</body>
+</html>
