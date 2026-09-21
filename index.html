@@ -96,6 +96,27 @@
     font-size:.78rem; color:var(--dim); display:flex; flex-wrap:wrap; gap:5px 16px; justify-content:center;
   }
 
+  /* ── Mode buttons ── */
+  .modeCol{display:flex; flex-direction:column; gap:10px; width:min(680px,100%);}
+  .modeBtn{
+    display:flex; align-items:center; gap:14px; text-align:left;
+    padding:14px 18px; border-radius:14px; cursor:pointer; touch-action:manipulation;
+    border:2px solid #34346a; background:var(--panel); color:var(--text);
+  }
+  .modeBtn:active{transform:scale(.98);}
+  .modeBtn .mIcon{font-size:1.9rem; line-height:1;}
+  .modeBtn .mText{display:flex; flex-direction:column; gap:2px;}
+  .modeBtn .mText b{font-size:1rem; letter-spacing:.03em;}
+  .modeBtn .mText small{font-size:.76rem; color:var(--dim);}
+  #modeSolo{border-color:var(--p1);}
+  #modeVsCpu{border-color:var(--p3);}
+  #mode2P{border-color:var(--p2);}
+  .moreToggle{
+    background:transparent; border:none; color:var(--dim);
+    font-size:.82rem; cursor:pointer; text-decoration:underline; padding:4px;
+    touch-action:manipulation;
+  }
+
   /* ── Game screen ── */
   #gameScreen{gap:6px;}
   #hud{
@@ -129,7 +150,7 @@
 
   /* ── D-pad: hidden by default, shown only when touch is detected ── */
   #dpad{
-    display:none;
+    display:grid;
     grid-template-columns:repeat(3, 72px);
     grid-template-rows:repeat(2, 72px);
     gap:8px;
@@ -174,9 +195,6 @@
   <h1>GLOW UP WORM</h1>
   <p class="tagline">Eat. Grow. Glow. Last worm wiggling wins!</p>
 
-  <div class="sectionLabel">Players</div>
-  <div class="slots" id="slots"></div>
-
   <div class="sectionLabel">Speed Ramp</div>
   <div class="diffRow" id="diffRow">
     <button class="diff" data-d="easy">🐢 Easy</button>
@@ -185,7 +203,28 @@
     <button class="diff" data-d="insane">⚡ Insane</button>
   </div>
 
-  <button class="bigBtn" id="startBtn">GLOW UP! 🐛</button>
+  <div class="sectionLabel">Choose Your Game</div>
+  <div class="modeCol">
+    <button class="modeBtn" id="modeSolo">
+      <span class="mIcon">🐛</span>
+      <span class="mText"><b>Solo — Just Grow</b><small>One worm. Eat, grow long, beat your score.</small></span>
+    </button>
+    <button class="modeBtn" id="modeVsCpu">
+      <span class="mIcon">🤖</span>
+      <span class="mText"><b>Solo vs Computer</b><small>You against a computer worm.</small></span>
+    </button>
+    <button class="modeBtn" id="mode2P">
+      <span class="mIcon">👥</span>
+      <span class="mText"><b>2 Players</b><small>You + someone else. Last worm wiggling wins!</small></span>
+    </button>
+  </div>
+
+  <button class="moreToggle" id="moreToggle">⚙️ More players (3–4) &amp; bots</button>
+  <div id="advanced" style="display:none; flex-direction:column; align-items:center; gap:12px; width:min(680px,100%);">
+    <div class="sectionLabel">Players</div>
+    <div class="slots" id="slots"></div>
+    <button class="bigBtn" id="startBtn">GLOW UP! 🐛</button>
+  </div>
 
   <div class="legend">
     <span>⚡ Speed boost</span><span>🛡 Shield (blocks one crash)</span>
@@ -415,6 +454,16 @@ document.addEventListener('keydown', e => {
     const map = KEYMAPS[w.id];
     if (map[key]) pushDir(w, map[key]);
   });
+  // Solo: when there's only one human, let them steer with the arrow keys
+  // OR WASD — whichever they reach for on a computer.
+  const humans = worms.filter(w => !w.isBot);
+  if (humans.length === 1) {
+    const soloMap = {
+      arrowup:'up', arrowdown:'down', arrowleft:'left', arrowright:'right',
+      w:'up', a:'left', s:'down', d:'right'
+    };
+    if (soloMap[key]) pushDir(humans[0], soloMap[key]);
+  }
 });
 
 /* Touch — swipe on canvas */
@@ -668,7 +717,7 @@ function overlay(id,on){ document.getElementById(id).classList.toggle('active',o
 
 /* ── Game flow ── */
 function startGame(){
-  if(slotState.filter(s=>s.active).length<2) slotState[1].active=true;
+  if(slotState.filter(s=>s.active).length<1) slotState[0].active=true;
   makeWorms();
   foods=[]; powerups=[]; deathOrder=[];
   elapsed=0; lastPowerupAt=0; acc=0; lastFrame=0;
@@ -724,6 +773,20 @@ const toMenu=()=>{
   overlay('pauseOverlay',false); overlay('resultOverlay',false);
   show('setupScreen');
 };
+
+function setMode(cfg){
+  for(let i=0;i<4;i++) slotState[i]={active:cfg[i][0], bot:cfg[i][1]};
+  startGame();
+}
+document.getElementById('modeSolo').addEventListener('click', ()=>setMode([[true,false],[false,true],[false,true],[false,true]]));
+document.getElementById('modeVsCpu').addEventListener('click', ()=>setMode([[true,false],[true,true],[false,true],[false,true]]));
+document.getElementById('mode2P').addEventListener('click', ()=>setMode([[true,false],[true,false],[false,true],[false,true]]));
+document.getElementById('moreToggle').addEventListener('click', ()=>{
+  const a=document.getElementById('advanced');
+  const shown=a.style.display!=='none';
+  a.style.display=shown?'none':'flex';
+  if(!shown) renderSlots();
+});
 
 document.getElementById('startBtn').addEventListener('click', startGame);
 document.getElementById('pauseBtn').addEventListener('click', togglePause);
